@@ -413,7 +413,8 @@ impl Config {
             cflags.push(" ");
             cflags.push(&self.cflags);
         }
-        cmd.env("CFLAGS", cflags);
+        cmd.env("CFLAGS", &cflags);
+        eprintln!("JIMP/auto CFLAGS={:?}", &cflags);
 
         let mut cxxflags = cxx_compiler.cflags_env();
         match env::var_os("CXXFLAGS") {
@@ -427,7 +428,7 @@ impl Config {
             cxxflags.push(" ");
             cxxflags.push(&self.cxxflags);
         }
-        cmd.env("CXXFLAGS", cxxflags);
+        cmd.env("CXXFLAGS", &cxxflags);
 
         if !self.ldflags.is_empty() {
             match env::var_os("LDFLAGS") {
@@ -436,6 +437,7 @@ impl Config {
                     let mut os = OsString::from(flags);
                     os.push(" ");
                     os.push(&self.ldflags);
+                    eprintln!("JIMP/auto LDFLAGS={:?}", &os);
                     cmd.env("LDFLAGS", &os)
                 }
             };
@@ -474,14 +476,39 @@ impl Config {
         cmd.env("CC", c_compiler.path().to_str().unwrap());
         cmd.env("CXX", cxx_compiler.path().to_str().unwrap());
 
+
+        fn compiler_type(compiler: &cc::Tool) -> String {
+            if compiler.is_like_gnu() {
+                "gnu".to_owned()
+            } else if compiler.is_like_clang() {
+                "clang".to_owned()
+            } else if compiler.is_like_msvc() {
+                "msvc".to_owned()
+            } else {
+                unreachable!()
+            }
+        }
+        eprintln!(
+            "JIMP/auto host={}, target={}, c_compiler={}, type={}",
+            &host,
+            &target,
+            c_compiler.path().display(),
+            compiler_type(&c_compiler)
+        );
+        // eprintln!("JIMP/auto c_compiler.args()={:?}", c_compiler.args());
+        eprintln!("JIMP/auto c_compiler.cc_env()={:?}", c_compiler.cc_env());
+        // eprintln!("JIMP/auto c_compiler.env()={:?}", c_compiler.env());
+        eprintln!("JIMP/auto c_compiler.cflags_env()={:?}", c_compiler.cflags_env());
         for &(ref k, ref v) in c_compiler.env().iter().chain(&self.env) {
             cmd.env(k, v);
+            eprintln!("JIMP/auto c_compiler env {:?}={:?}", k, v);
         }
 
         for &(ref k, ref v) in cxx_compiler.env().iter().chain(&self.env) {
             cmd.env(k, v);
         }
 
+        // run(cmd.current_dir(&build), "configure");
         run_config(cmd.current_dir(&build), &build);
 
         // Build up the first make command to build the build system.

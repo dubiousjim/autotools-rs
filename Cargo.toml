@@ -12,4 +12,4 @@ A build dependency to build native libraries that use configure&make-style build
 readme = "README.md"
 
 [dependencies]
-cc = "1"
+cc = { version = "1.0.54", git = "https://github.com/alexcrichton/cc-rs", branch = "master" }
